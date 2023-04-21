@@ -4,110 +4,46 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import roc_curve,auc
 from scipy import interp
 import os
-def get(topo_root,bc0,bc1,bc2,labs,str):
-    path_list = os.listdir(topo_root)
-    path_list.sort(key=lambda x:int(x[:-10]))####序列命名不同
-    for file in path_list:
-        filename = topo_root +'/'+file
-        filename2 = topo_root[:10]+str+topo_root[13:] +'/'+file
-        filename3 = topo_root[:10]+'T2W'+topo_root[13:] +'/'+file
-        filename4 = topo_root[:10]+'HBP'+topo_root[13:] +'/'+file
-        try:
-            np.load(filename3)
-            np.load(filename4)
-            if file.endswith('{}0.npy'.format(str)):##如何读取land
-                bc0.append(np.load(filename))
-                if file[-9:-8] =='1':
-                    labs.append(1)
-                else:
-                    labs.append(0)
-            elif file.endswith('{}1.npy'.format(str)):
-                bc1.append(np.load(filename))
-            elif file.endswith('{}2.npy'.format(str)):
-                bc2.append(np.load(filename))
-        except:##代表在HBP中没有该文件，所以扔掉该文件
-            print(filename2)
 
-       
-        
-    return bc0,bc1,bc2,labs
 
 def get_hbp(topo_root,bc0,bc1,bc2,labs,str,view):
+    """load topo feature and labels
+        args: topo_root: the folder path 
+
+    """
     path_list = os.listdir(topo_root)
     path_list.sort(key=lambda x:int(x[:-10]))####序列命名不同
     for file in path_list:
-        ##把路径中PVP_TOPO换成HBP_TOPO
-        ##/data/pst/PVP-TOPO/new
+        ##get topo feature path
         filename = topo_root[:10]+view+topo_root[13:] +'/'+file
-        filename3 = topo_root[:10]+'T2W'+topo_root[13:] +'/'+file
-        filename4 = topo_root[:10]+'HBP'+topo_root[13:] +'/'+file
-        ##可能HBP中有些文件不存在
-        try:
-            np.load(filename3)
-            np.load(filename4)
-
-            if file.endswith('{}0.npy'.format(str)):##如何读取land
-                bc0.append(np.load(filename))
-                if file[-9:-8] =='1':
-                    labs.append(1)
-                else:
-                    labs.append(0)
-            elif file.endswith('{}1.npy'.format(str)):
-                bc1.append(np.load(filename))
-            elif file.endswith('{}2.npy'.format(str)):
-                bc2.append(np.load(filename))
-        except:
-            print(file)
+       
+        if file.endswith('{}0.npy'.format(str)):
+            bc0.append(np.load(filename))
+            if file[-9:-8] =='1':
+                labs.append(1)
+            else:
+                labs.append(0)
+        elif file.endswith('{}1.npy'.format(str)):
+            bc1.append(np.load(filename))
+        elif file.endswith('{}2.npy'.format(str)):
+            bc2.append(np.load(filename))
+    
         
     return bc0,bc1,bc2,labs
 
-            
-
-##读入文件
-topo_root = r'/data/pst/PVP-TOPO/new'
-bc0,bc1,bc2,labs = [],[],[],[]
-bc0,bc1,bc2,labs = get(topo_root,bc0,bc1,bc2,labs,'bc')
-topo_root = r'/data/pst/PVP-TOPO/old'
-bc0,bc1,bc2,labs = get(topo_root,bc0,bc1,bc2,labs,'bc')
-# print(len(labs),len(bc0))
-# print(labs)
-##将拓扑都保存在文件中，再从文件中读取
-##每次提取拓扑特征，再读入
-topo_root = r'/data/pst/PVP-TOPO/new'
-ld0,ld1,ld2,labs1 = [],[],[],[]
-ld0,ld1,ld2,labs1 = get(topo_root,ld0,ld1,ld2,labs1,'ld')
-topo_root = r'/data/pst/PVP-TOPO/old'
-ld0,ld1,ld2,labs1 = get(topo_root,ld0,ld1,ld2,labs1,'ld')
-# print(len(labs1),len(ld0))
-# print(labs1)
-assert labs1 == labs
-
-##同样的可以得到hbp的拓扑特征
-##但是序列不一定能对应上
-##方法一：通过PVP序列去找HBP序列
-##二：手动对应后
+##通过load 特征文件（xx.npy）得到feature和labels
 topo_root = r'/data/pst/PVP-TOPO/new'
 bc0_hbp,bc1_hbp,bc2_hbp,labs_hbp = [],[],[],[]
 bc0_hbp,bc1_hbp,bc2_hbp,labs_hbp = get_hbp(topo_root,bc0_hbp,bc1_hbp,bc2_hbp,labs_hbp,'bc','HBP')
 topo_root = r'/data/pst/PVP-TOPO/old'
 bc0_hbp,bc1_hbp,bc2_hbp,labs_hbps = get_hbp(topo_root,bc0_hbp,bc1_hbp,bc2_hbp,labs_hbp,'bc','HBP')
-assert labs_hbp == labs
 
-topo_root = r'/data/pst/PVP-TOPO/new'
-bc0_T2W,bc1_T2W,bc2_T2W,labs_T2W = [],[],[],[]
-bc0_T2W,bc1_T2W,bc2_T2W,labs_T2W = get_hbp(topo_root,bc0_T2W,bc1_T2W,bc2_T2W,labs_T2W,'bc','T2W')
-topo_root = r'/data/pst/PVP-TOPO/old'
-bc0_T2W,bc1_T2W,bc2_T2W,labs_T2W = get_hbp(topo_root,bc0_T2W,bc1_T2W,bc2_T2W,labs_T2W,'bc','T2W')
-print(len(bc0_T2W),len(bc0_hbp),len(bc0))
-assert labs_T2W == labs
 ##组合想要分类的特征
-data = np.concatenate((bc0,bc1,bc2,bc0_hbp,bc1_hbp,bc2_hbp,bc0_T2W,bc1_T2W,bc2_T2W),axis=1)
-data = np.concatenate((bc0_T2W,bc1_T2W,bc2_T2W),axis=1)
-# print(data.shape) 
-label = labs
-# print(label)
+data = np.concatenate((bc0_hbp,bc1_hbp,bc2_hbp),axis=1)
+label = labs_hbp
+
 ##接下来进行分类
-###下面是pipeline+gridsearchcv    存在过拟合的问题
+###下面是pipeline+gridsearchcv    
 from sklearn.preprocessing   import MinMaxScaler
 from sklearn.pipeline        import Pipeline
 from sklearn.svm             import SVC
@@ -126,8 +62,8 @@ import xgboost as xgb
 import random
 from sklearn.metrics import precision_recall_curve
 from sklearn.decomposition import PCA
-filefolder = 'PVP_HBP_T2W/'
-KF = KFold(n_splits = 5)
+filefolder = 'PVP_HBP_T2W/'##保存的文件夹
+KF = KFold(n_splits = 5)##五折
 tprs=[]
 aucs=[]
 mean_fpr=np.linspace(0,1,100)#在0到1间生成100个点
@@ -142,7 +78,7 @@ i = 0
 
 
 
-# ##对data进行降维
+##PCA
 # pca = PCA()   
 # data = pca.fit_transform(data)
 # print("降维后",data.shape)
